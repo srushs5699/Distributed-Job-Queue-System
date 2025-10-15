@@ -342,8 +342,3 @@ curl http://localhost:5000/api/v1/metrics
 
 MIT License
 
-## Support
-
-For issues and questions:
-- GitHub Issues: [your-repo-url]
-- Email: your-email@example.com
