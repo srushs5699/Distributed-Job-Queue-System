@@ -1,0 +1,184 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: job_queue_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - job_queue_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: job_queue_api
+    ports:
+      - "5000:5000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - FLASK_ENV=production
+    volumes:
+      - ./app:/app
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  worker_high_1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: worker_high_1
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE=high
+    volumes:
+      - ./app:/app
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  worker_high_2:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: worker_high_2
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE=high
+    volumes:
+      - ./app:/app
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  worker_default_1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: worker_default_1
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE=default
+    volumes:
+      - ./app:/app
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  worker_default_2:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: worker_default_2
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE=default
+    volumes:
+      - ./app:/app
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  worker_low_1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: worker_low_1
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE=low
+    volumes:
+      - ./app:/app
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: job_queue_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: job_queue_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis_exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - redis
+    networks:
+      - job_queue_network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  job_queue_network:
+    driver: bridge

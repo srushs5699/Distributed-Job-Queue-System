@@ -1,0 +1,8 @@
+Flask==3.0.0
+redis==5.0.1
+rq==1.15.1
+gunicorn==21.2.0
+prometheus-flask-exporter==0.23.0
+pytest==7.4.3
+pytest-cov==4.1.0
+requests==2.31.0

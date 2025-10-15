@@ -1,0 +1,80 @@
+{
+  "dashboard": {
+    "title": "Job Queue Monitoring",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Queue Length",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "redis_db_keys{db=\"db0\"}",
+            "legendFormat": "Queue Length"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Task Throughput (jobs/min)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(flask_http_request_total[1m])",
+            "legendFormat": "Requests/min"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "API Response Time",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "flask_http_request_duration_seconds_sum / flask_http_request_duration_seconds_count",
+            "legendFormat": "Avg Response Time (s)"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Job Success Rate",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "(1 - (rate(flask_http_request_exceptions_total[5m]) / rate(flask_http_request_total[5m]))) * 100",
+            "legendFormat": "Success Rate %"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Redis Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "Memory Used (bytes)"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Active Workers",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "count(redis_connected_clients)",
+            "legendFormat": "Workers"
+          }
+        ]
+      }
+    ]
+  }
+}
